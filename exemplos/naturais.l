@@ -1,8 +1,7 @@
 %{  /* Reconhece numeros naturais arbitrarios. */
   #include <stdio.h>
 %}
-/* As definicoes abaixo sao chamadas de fragmentos, que podem
-   ser usadas para formar ERs. */
+/* As definicoes abaixo sao chamadas de fragmentos, que podem ser usadas para formar ERs. */
 digito  [0-9]
 naozero [1-9]
 numero  ({naozero}{digito}*)|0
