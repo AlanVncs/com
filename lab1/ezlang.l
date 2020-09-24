@@ -5,7 +5,6 @@
 
 %option yylineno
 
-cotes \"
 digit   [0-9]
 letter  [a-zA-Z]
 integer {digit}+
