@@ -10,8 +10,6 @@
     #include "parser.h"
 %}
 
-%option yylineno
-
 digit   [0-9]
 letter  [a-zA-Z]
 integer {digit}+

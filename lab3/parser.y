@@ -5,8 +5,11 @@
 
 %{
 #include <stdio.h>
+#include "table/tables.h"
 int yylex(void);
 void yyerror(char const *s);
+StrTable* strTable = NULL;
+VarTable* varTable = NULL;
 %}
 
 %token BGN BOOL ELSE END FALSE IF INT PROGRAM READ REAL REPEAT STRING THEN TRUE UNTIL VAR WRITE;
@@ -39,6 +42,9 @@ op: LT | EQ | PLUS | MINUS | TIMES | OVER;
 %%
 
 int main(void) {
+    strTable = create_str_table();
+    varTable = create_var_table();
+
     if (yyparse() == 0) printf("PARSE SUCCESSFUL!\n");
     else printf("PARSE FAILED!\n");
     return 0;

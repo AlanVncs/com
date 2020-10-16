@@ -1,4 +1,4 @@
-compile: clear
+compile: clean
 	bison parser.y
 	flex scanner.l
 	gcc -Wall scanner.c parser.c -ly
@@ -6,5 +6,5 @@ compile: clear
 test:
 	./out
 
-clear:
+clean:
 	rm -rf parser.c parser.h scanner.c a.out
