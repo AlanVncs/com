@@ -8,6 +8,10 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include "parser.h"
+    #include "table/tables.h"
+
+    extern StrTable* strTable;
+    extern VarTable* varTable;
 %}
 
 digit   [0-9]
@@ -23,22 +27,23 @@ space   [ \t]+
 %%
 
 "begin"   { return BGN; }
-"bool"    { return BOOL; }
 "else"    { return ELSE; }
 "end"     { return END; }
 "false"   { return FALSE; }
 "if"      { return IF; }
-"int"     { return INT; }
 "program" { return PROGRAM; }
 "read"    { return READ; }
-"real"    { return REAL; }
 "repeat"  { return REPEAT; }
-"string"  { return STRING; }
 "then"    { return THEN; }
 "true"    { return TRUE; }
 "until"   { return UNTIL; }
 "var"     { return VAR; }
 "write"   { return WRITE; }
+
+"bool"    { yylval.type = BOOL_TYPE; return BOOL; }
+"int"     { yylval.type = INT_TYPE; return INT; }
+"real"    { yylval.type = REAL_TYPE; return REAL; }
+"string"  { yylval.type = STR_TYPE; return STRING; }
 
 ":=" { return ASSIGN; }
 "="  { return EQ; }
@@ -53,8 +58,8 @@ space   [ \t]+
 
 {integer} { return INT_VAL; }
 {real}    { return REAL_VAL; }
-{string}  { return STR_VAL; }
-{id}      { return ID; }
+{string}  { add_string(strTable, yytext); return STR_VAL; }
+{id}      { yylval.str = yytext; return ID; }
 
 {enter}   { }
 {comment} { }
