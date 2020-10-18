@@ -1,4 +1,5 @@
-*.c
-*.h
-*.bin
-*.output
+scanner.c
+parser.c
+parser.h
+parser.output
+ezlang.bin
