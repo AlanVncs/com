@@ -12,6 +12,8 @@
 
     extern StrTable* strTable;
     extern VarTable* varTable;
+
+    char* cloneString(char* source);
 %}
 
 digit   [0-9]
@@ -59,17 +61,25 @@ space   [ \t]+
 {integer} { return INT_VAL; }
 {real}    { return REAL_VAL; }
 {string}  { add_string(strTable, yytext); return STR_VAL; }
-{id}      { yylval.str = yytext; return ID; }
+{id}      { yylval.str = cloneString(yytext); return ID; }
 
 {enter}   { }
 {comment} { }
 {space}   { }
 
-. { printf("LEXICAL ERROR (%d): Unknown symbol %s", yylineno, yytext); exit(1); }
+. { printf("LEXICAL ERROR (%d): Unknown symbol %s", yylineno, yytext); exit(EXIT_FAILURE); }
 
 %%
+
+char* cloneString(char* source){
+    int len = strlen(source);
+    char* dest = malloc((len+1)*sizeof(char));
+    strcpy(dest, source);
+    return dest;
+}
 
 void yyerror (char const *s) {
     printf("SYNTAX ERROR (%d): %s\n", yylineno, s);
     exit(EXIT_FAILURE);
 }
+
