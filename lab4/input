@@ -1,0 +1,5 @@
+program mypgrm;
+var
+begin
+if TRUE then 
+end
