@@ -24,20 +24,18 @@ string  \"[^\"\n]*\"
 id      {letter}+
 comment \{[^}]*\}
 enter   \n
-space   [ \t]+
+space   [ \t]
 
 %%
 
 "begin"   { return BGN; }
 "else"    { return ELSE; }
 "end"     { return END; }
-"false"   { return FALSE; }
 "if"      { return IF; }
 "program" { return PROGRAM; }
 "read"    { return READ; }
 "repeat"  { return REPEAT; }
 "then"    { return THEN; }
-"true"    { return TRUE; }
 "until"   { return UNTIL; }
 "var"     { return VAR; }
 "write"   { return WRITE; }
@@ -47,20 +45,23 @@ space   [ \t]+
 "real"    { yylval.type = REAL_TYPE; return REAL; }
 "string"  { yylval.type = STR_TYPE; return STRING; }
 
-":=" { return ASSIGN; }
-"="  { return EQ; }
-"<"  { return LT; }
-"+"  { return PLUS; }
-"-"  { return MINUS; }
-"*"  { return TIMES; }
-"/"  { return OVER; }
+"<"  { yylval.op = LT_OP; return LT; }
+"="  { yylval.op = EQ_OP; return EQ; }
+"+"  { yylval.op = PLUS_OP; return PLUS; }
+"-"  { yylval.op = MINUS_OP; return MINUS; }
+"*"  { yylval.op = TIMES_OP; return TIMES; }
+"/"  { yylval.op = OVER_OP; return OVER; }
+":=" { yylval.op = ASSIGN_OP; return ASSIGN; }
+
 "("  { return LPAR; }
 ")"  { return RPAR; }
 ";"  { return SEMI; }
 
-{integer} { return INT_VAL; }
-{real}    { return REAL_VAL; }
-{string}  { add_string(strTable, yytext); return STR_VAL; }
+"true"    { yylval.type = BOOL_TYPE; return TRUE; }
+"false"   { yylval.type = BOOL_TYPE; return FALSE; }
+{integer} { yylval.type = INT_TYPE;  return INT_VAL; }
+{real}    { yylval.type = REAL_TYPE; return REAL_VAL; }
+{string}  { yylval.type = STR_TYPE;  add_string(strTable, yytext); return STR_VAL; }
 {id}      { yylval.str = cloneString(yytext); return ID; }
 
 {enter}   { }
