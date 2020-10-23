@@ -61,7 +61,7 @@ AST* new_node(Type type, NodeKind kind, ...);
 AST* add_child(AST* parent, AST* child);
 AST* get_child(AST* parent, int idx);
 
-AST* new_subtree(NodeKind kind, Type type, int child_count, ...);
+AST* new_subtree(Type type, NodeKind kind, int child_count, ...);
 
 NodeKind get_kind(AST* node);
 char* kind2str(NodeKind kind);

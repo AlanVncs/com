@@ -32,10 +32,10 @@ static const Unif tableC[4][4] = {
 
 // :=
 static const Unif tableD[4][4] = {
-    {{INT_TYPE, NONE, NONE},      {ERR_TYPE, I2R_NODE, NONE}, {ERR_TYPE, NONE, NONE},  {ERR_TYPE, NONE, NONE}},
-    {{REAL_TYPE, NONE, I2R_NODE}, {REAL_TYPE, NONE, NONE},    {ERR_TYPE, NONE, NONE},  {ERR_TYPE, NONE, NONE}},
-    {{ERR_TYPE, NONE, NONE},      {ERR_TYPE, NONE, NONE},     {BOOL_TYPE, NONE, NONE}, {ERR_TYPE, NONE, NONE}},
-    {{ERR_TYPE, NONE, NONE},      {ERR_TYPE, NONE, NONE},     {ERR_TYPE, NONE, NONE},  {STR_TYPE, NONE, NONE}}
+    {{NO_TYPE, NONE, NONE},     {ERR_TYPE, I2R_NODE, NONE}, {ERR_TYPE, NONE, NONE},  {ERR_TYPE, NONE, NONE}},
+    {{NO_TYPE, NONE, I2R_NODE}, {NO_TYPE, NONE, NONE},      {ERR_TYPE, NONE, NONE},  {ERR_TYPE, NONE, NONE}},
+    {{ERR_TYPE, NONE, NONE},    {ERR_TYPE, NONE, NONE},     {NO_TYPE, NONE, NONE},   {ERR_TYPE, NONE, NONE}},
+    {{ERR_TYPE, NONE, NONE},    {ERR_TYPE, NONE, NONE},     {ERR_TYPE, NONE, NONE},  {NO_TYPE, NONE, NONE}}
 };
 
 
@@ -104,7 +104,7 @@ AST* get_child(AST* parent, int idx) {
     return parent->child[idx];
 }
 
-AST* new_subtree(NodeKind kind, Type type, int child_count, ...) {
+AST* new_subtree(Type type, NodeKind kind, int child_count, ...) {
     if (child_count > CHILDREN_LIMIT) {
         fprintf(stderr, "Too many children as arguments!\n");
         exit(1);
