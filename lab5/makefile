@@ -12,9 +12,9 @@ boo: compile
 	@./ezlang.bin < in/c10.ezl
 
 pdf: compile
-	@./ezlang.bin < in/c10.ezl 2> c10.dot
-	@dot -Tpdf c10.dot -o c02.pdf
-	# @rm -rf c10.dot
+	@./ezlang.bin < in/c10.ezl 2> out.dot
+	@dot -Tpdf out.dot -o out.pdf
+	@rm -rf out.dot
 
 clean:
-	@rm -rf parser.c parser.h scanner.c ezlang.bin parser.output c02.pdf
+	@rm -rf parser.c parser.h scanner.c ezlang.bin parser.output out.pdf

@@ -22,11 +22,21 @@ extern char* yytext;
 StrTable* st = NULL;
 VarTable* vt = NULL;
 
-// Op last_expr_op;
+AST* aux = NULL;
 
-void varDecl(char* id, Type type);
+int ast_stack_levels[100] = {0};
+int asl_index = 0;
+
+AST* ast_stack[100];
+int ast_stack_len = 0;
+
+int varDecl(char* id, Type type);
 Type varType(char* id);
 AST* exprAST(NodeKind kind, Op op, AST* l_ast, AST* r_ast);
+void checkBool(char* cmd, AST* ast);
+void newStackLevel();
+void pushAST(AST* ast);
+AST* unstackAST(NodeKind kind);
 
 %}
 
@@ -44,66 +54,91 @@ AST* exprAST(NodeKind kind, Op op, AST* l_ast, AST* r_ast);
 
 %%
 
-program: PROGRAM ID SEMI vars-sect stmt-sect;
+program: PROGRAM ID SEMI vars_sect stmt_sect {$$ = new_subtree(NO_TYPE, PROGRAM_NODE, 2, $4, $5); print_dot($$);};
 
-vars-sect: VAR opt-var-decl;
+vars_sect: VAR opt_var_decl {$$ = $2;};
 
-opt-var-decl: 
-  %empty
-| var-decl-list
+opt_var_decl: 
+  %empty        {$$ = unstackAST(VAR_LIST_NODE);}
+| var_decl_list
 ;
 
-var-decl-list: var-decl-list var-decl | var-decl;
-
-var-decl:
-      BOOL ID {varDecl(yytext, BOOL_TYPE);} SEMI 
-    | INT ID {varDecl(yytext, INT_TYPE);} SEMI
-    | REAL ID {varDecl(yytext, REAL_TYPE);} SEMI
-    | STRING ID {varDecl(yytext, STR_TYPE);} SEMI
+var_decl_list:
+    var_decl_list_body {$$ = unstackAST(VAR_LIST_NODE);}
 ;
 
-stmt-sect: BGN stmt-list END;
+var_decl_list_body:
+    var_decl_list_body var_decl {pushAST($2);}
+  | var_decl                    {newStackLevel(); pushAST($1);}
+;
 
-stmt-list:
-  stmt-list stmt
-| stmt
+var_decl:
+      BOOL ID   {aux = new_node(BOOL_TYPE, VAR_DECL_NODE, varDecl(yytext, BOOL_TYPE));} SEMI {$$ = aux;}
+    | INT ID    {aux = new_node(INT_TYPE, VAR_DECL_NODE, varDecl(yytext, INT_TYPE));}   SEMI {$$ = aux;}
+    | REAL ID   {aux = new_node(REAL_TYPE, VAR_DECL_NODE, varDecl(yytext, REAL_TYPE));} SEMI {$$ = aux;}
+    | STRING ID {aux = new_node(STR_TYPE, VAR_DECL_NODE, varDecl(yytext, STR_TYPE));}   SEMI {$$ = aux;}
+;
+
+stmt_sect:
+    BGN stmt_list END {$$ = $2;}
+;
+
+stmt_list:
+    stmt_list_body {$$ = unstackAST(BLOCK_NODE);}
+;
+
+stmt_list_body:
+    stmt_list_body stmt {pushAST($2);}
+  | stmt                {newStackLevel(); pushAST($1);}
 ;
 
 stmt: 
-  if-stmt
-| repeat-stmt
-| assign-stmt
-| read-stmt
-| write-stmt
+    if_stmt
+  | repeat_stmt
+  | assign_stmt
+  | read_stmt
+  | write_stmt
 ;
 
-if-stmt:
-  IF expr THEN stmt-list END;
-| IF expr THEN stmt-list ELSE stmt-list END
+if_stmt:
+    IF expr THEN stmt_list END                {checkBool("if", $2); $$ = new_subtree(NO_TYPE, IF_NODE, 2, $2, $4);};
+  | IF expr THEN stmt_list ELSE stmt_list END {checkBool("if", $2); $$ = new_subtree(NO_TYPE, IF_NODE, 3, $2, $4, $6);}
 ;
 
-repeat-stmt: REPEAT stmt-list UNTIL expr;
+repeat_stmt:
+    REPEAT stmt_list UNTIL expr {checkBool("repeat", $4); $$ = new_subtree(NO_TYPE, REPEAT_NODE, 2, $2, $4);}
+;
 
-assign-stmt: ID {varType(yytext);} ASSIGN expr SEMI;
+assign_stmt:
+    var_use ASSIGN expr SEMI {$$ = exprAST(ASSIGN_NODE, ASSIGN_OP, $1, $3);}
+;
 
-read-stmt: READ ID {varType(yytext);} SEMI;
+read_stmt:
+    READ var_use SEMI {$$ = new_subtree(NO_TYPE, READ_NODE, 1, $2);}
+;
 
-write-stmt: WRITE expr SEMI;
+write_stmt:
+    WRITE expr SEMI {$$ = new_subtree(NO_TYPE, WRITE_NODE, 1, $2);}
+;
 
 expr:
-  expr PLUS expr  {$$ = (AST*) 0;}
-| expr MINUS expr {$$ = (AST*) 0;}
-| expr TIMES expr {$$ = (AST*) 0;}
-| expr OVER expr  {$$ = (AST*) 0;}
-| expr LT expr    {$$ = exprAST(LT_NODE, LT_OP, $1, $3);}
-| expr EQ expr    {$$ = (AST*) 0;}
-| LPAR expr RPAR  {$$ = $2;}
-| TRUE            {$$ = new_node(BOOL_TYPE, BOOL_VAL_NODE, 1);}
-| FALSE           {$$ = new_node(BOOL_TYPE, BOOL_VAL_NODE, 0);}
-| INT_VAL         {$$ = new_node(INT_TYPE, INT_VAL_NODE, atoi(yytext));}
-| REAL_VAL        {$$ = new_node(REAL_TYPE, REAL_VAL_NODE, atof(yytext));}
-| STR_VAL         {$$ = new_node(STR_TYPE, STR_VAL_NODE, add_string(st, yytext));}
-| ID              {$$ = new_node(varType(yytext), VAR_USE_NODE, lookup_var(vt, yytext));}
+    LPAR expr RPAR  {$$ = $2;}
+  | expr PLUS expr  {$$ = exprAST(PLUS_NODE, PLUS_OP, $1, $3);}
+  | expr MINUS expr {$$ = exprAST(MINUS_NODE, MINUS_OP, $1, $3);}
+  | expr TIMES expr {$$ = exprAST(TIMES_NODE, TIMES_OP, $1, $3);}
+  | expr OVER expr  {$$ = exprAST(OVER_NODE, OVER_OP, $1, $3);}
+  | expr LT expr    {$$ = exprAST(LT_NODE, LT_OP, $1, $3);}
+  | expr EQ expr    {$$ = exprAST(EQ_NODE, EQ_OP, $1, $3);}
+  | TRUE            {$$ = new_node(BOOL_TYPE, BOOL_VAL_NODE, 1);}
+  | FALSE           {$$ = new_node(BOOL_TYPE, BOOL_VAL_NODE, 0);}
+  | INT_VAL         {$$ = new_node(INT_TYPE, INT_VAL_NODE, atoi(yytext));}
+  | REAL_VAL        {$$ = new_node(REAL_TYPE, REAL_VAL_NODE, atof(yytext));}
+  | STR_VAL         {$$ = new_node(STR_TYPE, STR_VAL_NODE, add_string(st, yytext));}
+  | var_use
+;
+
+var_use:
+    ID {$$ = new_node(varType(yytext), VAR_USE_NODE, lookup_var(vt, yytext));}
 ;
 
 %%
@@ -132,16 +167,14 @@ int main(void) {
     return 0;
 }
 
-void varDecl(char* id, Type type){
+int varDecl(char* id, Type type){
     int varIndex = lookup_var(vt, id);
     if(varIndex != -1){
         int declLine = get_line(vt, varIndex);
         printf("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", yylineno, id, declLine);
         exit(EXIT_FAILURE);
     }
-    else{
-        add_var(vt, id, yylineno, type);
-    }
+    return add_var(vt, id, yylineno, type);
 }
 
 Type varType(char* id){
@@ -153,50 +186,46 @@ Type varType(char* id){
     return get_type(vt, index);
 }
 
-// TODO Nó de conversão
 AST* exprAST(NodeKind kind, Op op, AST* l_ast, AST* r_ast){
     Unif unif = get_kinds(op, l_ast->type, r_ast->type);
     if(unif.type == ERR_TYPE){
         printf("SEMANTIC ERROR (%d): incompatible types for operator '%s', LHS is '%s' and RHS is '%s'.\n", yylineno, op2text(op), type2text(l_ast->type), type2text(r_ast->type));
         exit(EXIT_FAILURE);
     }
-    AST* a = new_subtree(kind, unif.type, 2, l_ast, r_ast);
-    return a;
+
+    // Adiciona nós de conversão quando necessário
+    l_ast = (unif.lnk != NONE) ? new_subtree(unif.type, unif.lnk, 1, l_ast) : l_ast;
+    r_ast = (unif.rnk != NONE) ? new_subtree(unif.type, unif.rnk, 1, r_ast) : r_ast;
+
+    return new_subtree(unif.type, kind, 2, l_ast, r_ast);
 }
 
-/*
-void checkBool(char* cmd, Type type){
-    if(type != BOOL_TYPE){
-        printf("SEMANTIC ERROR (%d): conditional expression in '%s' is '%s' instead of 'bool'.\n", yylineno, cmd, typeText(type));
+void checkBool(char* cmd, AST* ast){
+    if(ast->type != BOOL_TYPE){
+        printf("SEMANTIC ERROR (%d): conditional expression in '%s' is '%s' instead of 'bool'.\n", yylineno, cmd, type2text(ast->type));
         exit(EXIT_FAILURE);
     }
 }
-*/
 
-// ASSIGN_NODE,
-// EQ_NODE,
-// BLOCK_NODE,
-// BOOL_VAL_NODE,
-// IF_NODE,
-// INT_VAL_NODE,
-// LT_NODE,
-// MINUS_NODE,
-// OVER_NODE,
-// PLUS_NODE,
-// PROGRAM_NODE,
-// READ_NODE,
-// REAL_VAL_NODE,
-// REPEAT_NODE,
-// STR_VAL_NODE,
-// TIMES_NODE,
-// VAR_DECL_NODE,
-// VAR_LIST_NODE,
-// VAR_USE_NODE,
-// WRITE_NODE,
-// B2I_NODE,
-// B2R_NODE,
-// B2S_NODE,
-// I2R_NODE,
-// I2S_NODE,
-// R2S_NODE,
-// NONE
+void newStackLevel(){
+    ast_stack_levels[asl_index] = ast_stack_len;
+    asl_index++;
+}
+
+void pushAST(AST* ast){
+    ast_stack[ast_stack_len] = ast;
+    ast_stack_len++;
+}
+
+AST* unstackAST(NodeKind kind){
+    AST* ast = new_node(NO_TYPE, kind, 0);
+    if(asl_index == 0) return ast;
+    asl_index--;
+    int i;
+    for(i=ast_stack_levels[asl_index]; i<ast_stack_len; i++){
+        add_child(ast, ast_stack[i]);
+    }
+    ast_stack_len = ast_stack_levels[asl_index];
+
+    return ast;
+}
