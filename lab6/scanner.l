@@ -73,13 +73,6 @@ space   [ \t]
 
 %%
 
-// char* cloneString(char* source){
-//     int len = strlen(source);
-//     char* dest = malloc((len+1)*sizeof(char));
-//     strcpy(dest, source);
-//     return dest;
-// }
-
 void yyerror (char const *s) {
     printf("SYNTAX ERROR (%d): %s\n", yylineno, s);
     exit(EXIT_FAILURE);

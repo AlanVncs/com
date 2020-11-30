@@ -59,8 +59,8 @@ program: PROGRAM ID SEMI vars_sect stmt_sect {$$ = new_subtree(NO_TYPE, PROGRAM_
 vars_sect: VAR opt_var_decl {$$ = $2;};
 
 opt_var_decl: 
-    %empty        {$$ = unstackAST(VAR_LIST_NODE);}
-  | var_decl_list
+  %empty        {$$ = unstackAST(VAR_LIST_NODE);}
+| var_decl_list
 ;
 
 var_decl_list:
