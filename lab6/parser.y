@@ -10,6 +10,7 @@
 #include "lib/type.h"
 #include "lib/table.h"
 #include "lib/ast.h"
+#include "lib/interpreter.h"
 
 int yylex(void);
 void yyerror(char const *s);
@@ -19,13 +20,13 @@ int yylineno;
 char last_id[VARIABLE_MAX_SIZE+1];
 
 
-VarTable* var_table = NULL;
-StrTable* str_table = NULL;
+VarTable* vt = NULL;
+StrTable* st = NULL;
 AST* root_ast = NULL;
 
 void decl_var(AST* var_decl);
 void check_var(AST* var_use);
-void check_bool(AST* expr);
+void check_bool(AST* cond_stmt);
 Type eval_expr(AST* expr);
 Type eval_operation(AST* operation);
 
@@ -95,7 +96,7 @@ if_stmt:
 ;
 
 repeat_stmt:
-    REPEAT stmt_list UNTIL expr { $$=new_ast_subtree(REPEAT_NODE, NULL, get_ast_line($2), NO_TYPE, 2, $2, $4); check_bool($$); }
+    REPEAT stmt_list UNTIL expr { $$=new_ast_subtree(REPEAT_NODE, NULL, get_ast_line($2), NO_TYPE, 2, $4, $2); check_bool($$); }
 ;
 
 read_stmt:
@@ -147,7 +148,7 @@ constant_expr:
   | FALSE       { $$=new_ast(BOOL_VAL_NODE, NULL, yylineno, BOOL_TYPE, 0); }
   | INT_VAL     { $$=new_ast(INT_VAL_NODE, NULL, yylineno, INT_TYPE, atoi(yytext)); }
   | REAL_VAL    { $$=new_ast(REAL_VAL_NODE, NULL, yylineno, REAL_TYPE, atof(yytext)); }
-  | STR_VAL     { $$=new_ast(STR_VAL_NODE, NULL, yylineno, STR_TYPE, add_table_str(str_table, yytext)); }
+  | STR_VAL     { $$=new_ast(STR_VAL_NODE, NULL, yylineno, STR_TYPE, add_table_str(st, yytext)); }
 ;
 
 %%
@@ -155,15 +156,17 @@ constant_expr:
 
 int main(void) {
 
-    var_table = new_var_table();
-    str_table = new_str_table();
+    st = new_str_table();
+    vt = new_var_table();
 
     yyparse();
-    print_str_table(str_table);
-    print_var_table(var_table);
+    stdin = fopen(ctermid(NULL), "r");
+    /* print_str_table(st); */
+    /* print_var_table(vt); */
+    run_ast(root_ast);
     gen_ast_dot(root_ast);
-    free_str_table(str_table);
-    free_var_table(var_table);
+    free_str_table(st);
+    free_var_table(vt);
 
 
     return 0;
@@ -171,29 +174,32 @@ int main(void) {
 
 void decl_var(AST* var_decl){
 
-    AST* found_ast = lookup_table_var(var_table, var_decl);
+    AST* found_ast = lookup_table_var(vt, var_decl);
 
     // Variável já existe
     if(found_ast) already_declared(get_ast_line(var_decl), get_ast_name(var_decl), get_ast_line(found_ast));
 
-    add_table_var(var_table, var_decl);
+    int idx = add_table_var(vt, var_decl);
+    set_ast_data(var_decl, idx);
     
 }
 
 void check_var(AST* var_use){
 
-    AST* found_ast = lookup_table_var(var_table, var_use);
+    AST* found_ast = lookup_table_var(vt, var_use);
 
     // Variável não existe
     if(!found_ast) not_declared(get_ast_line(var_use), get_ast_name(var_use));
 
+    set_ast_data(var_use, get_ast_data(found_ast));
     set_ast_type(var_use, get_ast_type(found_ast));
 }
 
-void check_bool(AST* expr){
+void check_bool(AST* cond_stmt){
+    AST* expr = get_ast_child(cond_stmt, 0);
     Type expr_type = get_ast_type(expr);
     if(expr_type != BOOL_TYPE){
-        int test = get_ast_kind(expr) == IF_NODE;
+        int test = get_ast_kind(cond_stmt) == IF_NODE;
         not_bool(get_ast_line(expr), test?"if":"repeat", get_type_str(expr_type));
     }
 }

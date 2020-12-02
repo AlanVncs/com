@@ -3,7 +3,11 @@ all: compile test
 compile: clean
 	@bison parser.y -v
 	@flex scanner.l
-	@gcc -Wall scanner.c parser.c lib/table.c lib/type.c lib/ast.c -o ezlang.bin
+	@gcc -Wall scanner.c parser.c lib/table.c lib/type.c lib/ast.c lib/interpreter.c -o ezlang.bin
+
+trace: compile
+	@gcc -D TRACE -Wall scanner.c parser.c lib/table.c lib/type.c lib/ast.c lib/interpreter.c -o ezlang.bin
+	@./ezlang.bin < in/main.ezl
 
 diff:
 	@./diff.sh

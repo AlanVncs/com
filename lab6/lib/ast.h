@@ -60,6 +60,7 @@ AST* new_ast(NodeKind kind, char* name, int line, Type type, double data);
 AST* new_ast_subtree(NodeKind kind, char* name, int line, Type type, int child_count, ...);
 
 // Modify
+AST* set_ast_data(AST* ast, double data);
 AST* set_ast_type(AST* ast, Type type);
 AST* add_ast_child(AST* parent, AST* child);
 AST* set_ast_name(AST* ast, char* name);

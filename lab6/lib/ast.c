@@ -49,6 +49,12 @@ AST* new_ast_subtree(NodeKind kind, char* name, int line, Type type, int child_c
 
 
 // Modify
+AST* set_ast_data(AST* ast, double data){
+    CHECK_PTR(ast);
+    ast->data = data;
+    return ast;
+}
+
 AST* set_ast_type(AST* ast, Type type){
     CHECK_PTR(ast);
     ast->type = type;
@@ -213,7 +219,7 @@ int get_ast_length(AST* ast){
 
 AST* get_ast_child(AST* ast, int i){
     CHECK_PTR(ast);
-    CHECK_BOUNDS(i, ast->children_length);
+    if(i>=ast->children_length) return NULL;
     return ast->children[i];
 }
 
